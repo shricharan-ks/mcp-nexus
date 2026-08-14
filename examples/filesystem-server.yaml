@@ -4,15 +4,19 @@ metadata:
   name: filesystem-mcp
   namespace: mcp-servers
 spec:
-  image: ghcr.io/mcp-gateway/filesystem-mcp-server:latest
-  transport: stdio
+  source:
+    image: ghcr.io/mcp-gateway/filesystem-mcp-server:latest
+    port: 8080
+  protocol:
+    transport: stdio
+    endpoint: /mcp
   env:
     - name: MCP_ALLOWED_PATHS
       value: /data
   resources:
     requests:
-      cpu: 50m
-      memory: 64Mi
+      cpu: "50m"
+      memory: "64Mi"
     limits:
-      cpu: 200m
-      memory: 128Mi
+      cpu: "200m"
+      memory: "128Mi"

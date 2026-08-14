@@ -9,16 +9,19 @@ metadata:
   name: echo-server
   namespace: mcp-servers
 spec:
-  image: ghcr.io/mcp-gateway/echo-mcp-server:latest
-  port: 8080
-  transport: streamable-http
-  endpoint: /mcp
-  healthCheck:
-    path: /health
+  source:
+    image: ghcr.io/mcp-gateway/echo-mcp-server:latest
+    port: 8080
+    healthCheck:
+      path: /health
+      periodSeconds: 10
+  protocol:
+    transport: streamable-http
+    endpoint: /mcp
   resources:
     requests:
-      cpu: 50m
-      memory: 64Mi
+      cpu: "50m"
+      memory: "64Mi"
     limits:
-      cpu: 200m
-      memory: 128Mi
+      cpu: "200m"
+      memory: "128Mi"

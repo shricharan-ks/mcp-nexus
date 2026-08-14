@@ -18,22 +18,27 @@ metadata:
   name: github-mcp
   namespace: mcp-servers
 spec:
-  image: ghcr.io/github/mcp-server:latest
-  transport: streamable-http
-  endpoint: /mcp
-  port: 8080
-  envFrom:
-    - secretRef:
+  source:
+    image: ghcr.io/github/mcp-server:latest
+    port: 8080
+    healthCheck:
+      path: /health
+      periodSeconds: 10
+  protocol:
+    transport: streamable-http
+    endpoint: /mcp
+  secrets:
+    - envVar: GITHUB_TOKEN
+      secretRef:
         name: github-mcp-creds
+        key: GITHUB_TOKEN
   scaling:
     minReplicas: 1
     maxReplicas: 5
-  healthCheck:
-    path: /health
   resources:
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: "100m"
+      memory: "128Mi"
     limits:
-      cpu: 500m
-      memory: 256Mi
+      cpu: "500m"
+      memory: "256Mi"
