@@ -1,0 +1,43 @@
+# Binaries
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+vendor/
+*.test
+*.out
+cover.out
+coverage.txt
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# Helm
+deploy/helm/mcp-gateway/charts/
+
+# Build artifacts
+testbin/
+hack/tools/bin/
+
+# Environment
+.env
+.env.local
+*.pem
+*.key
+
+# Remember plugin
+.remember/

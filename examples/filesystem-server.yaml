@@ -1,0 +1,18 @@
+apiVersion: mcp.mcp-gateway.io/v1alpha1
+kind: MCPServer
+metadata:
+  name: filesystem-mcp
+  namespace: mcp-servers
+spec:
+  image: ghcr.io/mcp-gateway/filesystem-mcp-server:latest
+  transport: stdio
+  env:
+    - name: MCP_ALLOWED_PATHS
+      value: /data
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

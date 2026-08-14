@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcp-servers
+---
+apiVersion: mcp.mcp-gateway.io/v1alpha1
+kind: MCPServer
+metadata:
+  name: echo-server
+  namespace: mcp-servers
+spec:
+  image: ghcr.io/mcp-gateway/echo-mcp-server:latest
+  port: 8080
+  transport: streamable-http
+  endpoint: /mcp
+  healthCheck:
+    path: /health
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

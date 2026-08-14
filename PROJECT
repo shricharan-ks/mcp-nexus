@@ -1,0 +1,16 @@
+domain: mcp-gateway.io
+layout:
+- go.kubebuilder.io/v4
+projectName: mcp-gateway
+repo: github.com/mcp-gateway/mcp-gateway
+version: "3"
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: mcp-gateway.io
+  group: mcp
+  kind: MCPServer
+  path: github.com/mcp-gateway/mcp-gateway/api/v1alpha1
+  version: v1alpha1
