@@ -30,6 +30,7 @@ import (
 
 	mcpv1alpha1 "github.com/mcp-gateway/mcp-gateway/api/v1alpha1"
 	controller "github.com/mcp-gateway/mcp-gateway/internal/controller"
+	"github.com/mcp-gateway/mcp-gateway/internal/keycloak"
 )
 
 var (
@@ -96,6 +97,37 @@ func main() {
 		GatewayNamespace: gatewayNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MCPServer")
+		os.Exit(1)
+	}
+
+	// Set up Keycloak client if the environment is configured.
+	var kcClient *keycloak.Client
+	keycloakURL := os.Getenv("KEYCLOAK_URL")
+	keycloakRealm := getEnvOrDefault("KEYCLOAK_REALM", "mcp-gateway")
+	if keycloakURL != "" {
+		kcClient = keycloak.NewClient(keycloakURL, keycloakRealm)
+		setupLog.Info("Keycloak client configured", "url", keycloakURL, "realm", keycloakRealm)
+	} else {
+		setupLog.Info("KEYCLOAK_URL not set, MCPAgent Keycloak integration disabled")
+	}
+
+	if err = (&controller.MCPAgentReconciler{
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		KeycloakClient: kcClient,
+		KeycloakAdmin:  getEnvOrDefault("KEYCLOAK_ADMIN_USER", "admin"),
+		KeycloakPass:   os.Getenv("KEYCLOAK_ADMIN_PASSWORD"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MCPAgent")
+		os.Exit(1)
+	}
+
+	if err = (&controller.MCPPolicyReconciler{
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		CerbosURL: os.Getenv("CERBOS_URL"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MCPPolicy")
 		os.Exit(1)
 	}
 
