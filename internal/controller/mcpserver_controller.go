@@ -49,7 +49,7 @@ const (
 	requeueFailed    = 60 * time.Second
 
 	labelName      = "app.kubernetes.io/name"
-	labelInstance   = "app.kubernetes.io/instance"
+	labelInstance  = "app.kubernetes.io/instance"
 	labelManagedBy = "app.kubernetes.io/managed-by"
 
 	conditionReady    = "Ready"

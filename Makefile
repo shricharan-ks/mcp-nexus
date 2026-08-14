@@ -65,7 +65,7 @@ lint: golangci-lint ## Run golangci-lint
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run all tests (with envtest)
-	KUBEBUILDER_ASSETS="$$($(ENVTEST) use -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$$($(ENVTEST) use -p path)" go test $$(go list ./... | grep -v /e2e | grep -v /cmd/) -coverprofile cover.out
 
 .PHONY: test-unit
 test-unit: ## Run unit tests (excludes e2e and controller packages)

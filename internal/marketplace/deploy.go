@@ -62,8 +62,8 @@ func (d *DeployService) DeployFromCatalog(ctx context.Context, entryName, namesp
 				Name:      serverName + "-secrets",
 				Namespace: namespace,
 				Labels: map[string]string{
-					"mcp-gateway.io/managed-by":  "marketplace",
-					"mcp-gateway.io/entry-name":  entryName,
+					"mcp-gateway.io/managed-by":   "marketplace",
+					"mcp-gateway.io/entry-name":   entryName,
 					"app.kubernetes.io/component": "mcp-server",
 				},
 			},
@@ -73,8 +73,8 @@ func (d *DeployService) DeployFromCatalog(ctx context.Context, entryName, namesp
 		if _, err := controllerutil.CreateOrUpdate(ctx, d.Client, secret, func() error {
 			secret.StringData = secrets
 			secret.Labels = map[string]string{
-				"mcp-gateway.io/managed-by":  "marketplace",
-				"mcp-gateway.io/entry-name":  entryName,
+				"mcp-gateway.io/managed-by":   "marketplace",
+				"mcp-gateway.io/entry-name":   entryName,
 				"app.kubernetes.io/component": "mcp-server",
 			}
 			return nil
@@ -122,8 +122,8 @@ func (d *DeployService) DeployFromCatalog(ctx context.Context, entryName, namesp
 				Name:      serverName + "-policy",
 				Namespace: namespace,
 				Labels: map[string]string{
-					"mcp-gateway.io/managed-by":  "marketplace",
-					"mcp-gateway.io/entry-name":  entryName,
+					"mcp-gateway.io/managed-by":   "marketplace",
+					"mcp-gateway.io/entry-name":   entryName,
 					"app.kubernetes.io/component": "mcp-policy",
 				},
 			},
