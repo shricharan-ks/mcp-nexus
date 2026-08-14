@@ -59,3 +59,20 @@ auth:
 rateLimit:
   enabled: true
   defaultRequestsPerMinute: 600
+
+observability:
+  enabled: true
+  otelCollector:
+    image: otel/opentelemetry-collector-contrib:0.110.0
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+  alerts:
+    enabled: true

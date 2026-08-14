@@ -1,0 +1,59 @@
+{{- if .Values.observability.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "mcp-gateway.fullname" . }}-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mcp-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+spec:
+  groups:
+    - name: mcp-gateway.rules
+      rules:
+        - alert: MCPServerDown
+          expr: mcpgateway_servers_total{phase="Failed"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MCP server in Failed phase"
+            description: "One or more MCP servers have been in Failed phase for more than 5 minutes."
+
+        - alert: MCPHighErrorRate
+          expr: |
+            (
+              sum(rate(mcpgateway_requests_total{code=~"5.."}[5m]))
+              /
+              sum(rate(mcpgateway_requests_total[5m]))
+            ) * 100 > 5
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "MCP Gateway error rate exceeds 5%"
+            description: "The overall error rate has been above 5% for more than 2 minutes."
+
+        - alert: MCPAgentQuotaNearExhaustion
+          expr: |
+            (
+              mcpgateway_agent_quota_used
+              /
+              mcpgateway_agent_quota_limit
+            ) * 100 > 90
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "MCP agent quota usage above 90%"
+            description: "Agent {{ "{{" }} $labels.agent {{ "}}" }} has consumed more than 90% of its quota."
+
+        - alert: MCPReconcileErrors
+          expr: rate(mcpgateway_reconcile_errors_total[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "MCP reconcile error rate elevated"
+            description: "The reconcile error rate has exceeded 0.1/s for the last 5 minutes."
+{{- end }}
