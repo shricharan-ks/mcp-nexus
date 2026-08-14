@@ -35,8 +35,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	mcpv1alpha1 "github.com/mcp-gateway/mcp-gateway/api/v1alpha1"
+	envoyPkg "github.com/mcp-gateway/mcp-gateway/internal/envoy"
 )
 
 const (
@@ -62,11 +64,14 @@ const (
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 
 // MCPServerReconciler reconciles an MCPServer object.
 type MCPServerReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme           *runtime.Scheme
+	GatewayName      string
+	GatewayNamespace string
 }
 
 // Reconcile handles the reconciliation loop for MCPServer resources.
@@ -207,6 +212,13 @@ func (r *MCPServerReconciler) reconcileDeploying(ctx context.Context, server *mc
 
 	if deploy.Status.ReadyReplicas > 0 && deploy.Status.ReadyReplicas == deploy.Status.Replicas {
 		logger.Info("Deployment is ready, transitioning to Running")
+
+		// Reconcile HTTPRoute for gateway integration.
+		if err := r.reconcileHTTPRoute(ctx, server); err != nil {
+			logger.Error(err, "Failed to reconcile HTTPRoute")
+			return r.setPhase(ctx, server, mcpv1alpha1.MCPServerPhaseFailed, fmt.Sprintf("Failed to reconcile HTTPRoute: %v", err))
+		}
+
 		meta.SetStatusCondition(&server.Status.Conditions, metav1.Condition{
 			Type:               conditionReady,
 			Status:             metav1.ConditionTrue,
@@ -299,6 +311,13 @@ func (r *MCPServerReconciler) reconcileUpdating(ctx context.Context, server *mcp
 		deploy.Status.ReadyReplicas == deploy.Status.Replicas &&
 		deploy.Status.UpdatedReplicas == deploy.Status.Replicas {
 		logger.Info("Rollout complete, transitioning to Running")
+
+		// Reconcile HTTPRoute for gateway integration.
+		if err := r.reconcileHTTPRoute(ctx, server); err != nil {
+			logger.Error(err, "Failed to reconcile HTTPRoute")
+			return r.setPhase(ctx, server, mcpv1alpha1.MCPServerPhaseFailed, fmt.Sprintf("Failed to reconcile HTTPRoute: %v", err))
+		}
+
 		meta.SetStatusCondition(&server.Status.Conditions, metav1.Condition{
 			Type:               conditionReady,
 			Status:             metav1.ConditionTrue,
@@ -493,6 +512,41 @@ func (r *MCPServerReconciler) getDeployment(ctx context.Context, server *mcpv1al
 }
 
 // ---------------------------------------------------------------------------
+// HTTPRoute helpers
+// ---------------------------------------------------------------------------
+
+func (r *MCPServerReconciler) reconcileHTTPRoute(ctx context.Context, server *mcpv1alpha1.MCPServer) error {
+	if r.GatewayName == "" {
+		return nil // gateway not configured
+	}
+
+	desired := envoyPkg.BuildHTTPRoute(server, r.GatewayName, r.GatewayNamespace)
+	if err := controllerutil.SetControllerReference(server, desired, r.Scheme); err != nil {
+		return fmt.Errorf("setting owner reference on HTTPRoute: %w", err)
+	}
+
+	var existing gatewayv1.HTTPRoute
+	err := r.Get(ctx, types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}, &existing)
+	if apierrors.IsNotFound(err) {
+		log.FromContext(ctx).Info("Creating HTTPRoute", "name", desired.Name)
+		return r.Create(ctx, desired)
+	}
+	if err != nil {
+		return err
+	}
+
+	// Update only if the spec has diverged.
+	if !equality.Semantic.DeepEqual(existing.Spec, desired.Spec) {
+		existing.Spec = desired.Spec
+		existing.Labels = desired.Labels
+		log.FromContext(ctx).Info("Updating HTTPRoute", "name", desired.Name)
+		return r.Update(ctx, &existing)
+	}
+
+	return nil
+}
+
+// ---------------------------------------------------------------------------
 // Service helpers
 // ---------------------------------------------------------------------------
 
@@ -616,5 +670,6 @@ func (r *MCPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&mcpv1alpha1.MCPServer{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&gatewayv1.HTTPRoute{}).
 		Complete(r)
 }

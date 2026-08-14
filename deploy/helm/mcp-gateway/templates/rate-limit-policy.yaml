@@ -1,0 +1,25 @@
+{{- if and .Values.gateway.enabled .Values.rateLimit.enabled }}
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: {{ .Values.gateway.name }}-rate-limit
+  namespace: {{ .Values.gateway.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "mcp-gateway.labels" . | nindent 4 }}
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: {{ .Values.gateway.name }}
+  rateLimit:
+    type: Global
+    global:
+      rules:
+        - limit:
+            requests: {{ .Values.rateLimit.defaultRequestsPerMinute }}
+            unit: Minute
+          clientSelectors:
+            - headers:
+                - name: x-mcp-agent-id
+                  type: Distinct
+{{- end }}

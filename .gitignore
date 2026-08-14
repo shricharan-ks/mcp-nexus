@@ -1,8 +1,8 @@
 # Binaries
 bin/
 dist/
-operator
-manager
+/operator
+/manager
 *.exe
 *.dll
 *.so

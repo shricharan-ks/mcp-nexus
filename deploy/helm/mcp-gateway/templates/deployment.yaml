@@ -28,6 +28,10 @@ spec:
             {{- end }}
             - --health-probe-bind-address=:{{ .Values.service.healthPort }}
             - --metrics-bind-address=:{{ .Values.service.metricsPort }}
+            {{- if .Values.gateway.enabled }}
+            - --gateway-name={{ .Values.gateway.name }}
+            - --gateway-namespace={{ .Values.gateway.namespace | default .Release.Namespace }}
+            {{- end }}
           ports:
             - name: health
               containerPort: {{ .Values.service.healthPort }}

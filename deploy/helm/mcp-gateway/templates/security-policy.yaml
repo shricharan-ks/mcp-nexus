@@ -1,0 +1,27 @@
+{{- if and .Values.gateway.enabled .Values.auth.enabled }}
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: {{ .Values.gateway.name }}-jwt
+  namespace: {{ .Values.gateway.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "mcp-gateway.labels" . | nindent 4 }}
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: {{ .Values.gateway.name }}
+  jwt:
+    providers:
+      - name: mcp-gateway-jwt
+        issuer: {{ .Values.auth.issuer | quote }}
+        audiences:
+          - {{ .Values.auth.audience | quote }}
+        remoteJWKS:
+          uri: {{ .Values.auth.jwksUri | quote }}
+        claimToHeaders:
+          - claim: agent_id
+            header: x-mcp-agent-id
+          - claim: sub
+            header: x-mcp-subject
+{{- end }}

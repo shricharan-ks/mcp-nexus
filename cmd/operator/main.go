@@ -26,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	mcpv1alpha1 "github.com/mcp-gateway/mcp-gateway/api/v1alpha1"
 	controller "github.com/mcp-gateway/mcp-gateway/internal/controller"
@@ -39,16 +40,28 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(mcpv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(gatewayv1.Install(scheme))
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }
 
 func main() {
 	var metricsAddr string
 	var healthProbeAddr string
 	var enableLeaderElection bool
+	var gatewayName string
+	var gatewayNamespace string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&healthProbeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false, "Enable leader election for controller manager.")
+	flag.StringVar(&gatewayName, "gateway-name", getEnvOrDefault("GATEWAY_NAME", "mcp-gateway"), "The name of the Gateway resource for HTTPRoute parentRef.")
+	flag.StringVar(&gatewayNamespace, "gateway-namespace", getEnvOrDefault("GATEWAY_NAMESPACE", ""), "The namespace of the Gateway resource. Defaults to the operator's namespace.")
 
 	opts := zap.Options{Development: true}
 	opts.BindFlags(flag.CommandLine)
@@ -77,8 +90,10 @@ func main() {
 	}
 
 	if err = (&controller.MCPServerReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		GatewayName:      gatewayName,
+		GatewayNamespace: gatewayNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MCPServer")
 		os.Exit(1)

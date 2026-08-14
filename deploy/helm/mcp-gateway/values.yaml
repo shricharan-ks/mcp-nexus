@@ -38,3 +38,24 @@ securityContext:
       - ALL
   seccompProfile:
     type: RuntimeDefault
+
+gateway:
+  enabled: true
+  name: mcp-gateway
+  namespace: ""  # defaults to release namespace
+  className: mcp-gateway
+  listeners:
+    http:
+      port: 80
+    https:
+      port: 443
+
+auth:
+  enabled: true
+  issuer: "http://keycloak.mcp-system.svc.cluster.local:8080/realms/mcp-gateway"
+  audience: "mcp-gateway"
+  jwksUri: "http://keycloak.mcp-system.svc.cluster.local:8080/realms/mcp-gateway/protocol/openid-connect/certs"
+
+rateLimit:
+  enabled: true
+  defaultRequestsPerMinute: 600
