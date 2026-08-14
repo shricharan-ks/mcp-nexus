@@ -3,6 +3,7 @@ bin/
 dist/
 /operator
 /manager
+/apiserver
 *.exe
 *.dll
 *.so

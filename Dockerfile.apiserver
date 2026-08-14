@@ -1,0 +1,5 @@
+FROM registry.access.redhat.com/ubi9-minimal:latest
+WORKDIR /
+COPY bin/apiserver-linux /apiserver
+USER 65532:65532
+ENTRYPOINT ["/apiserver"]
