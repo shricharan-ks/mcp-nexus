@@ -106,7 +106,9 @@ func (l *Logger) Log(ctx context.Context, entry Entry) {
 
 	for _, s := range l.sinks {
 		go func(sink Sink) {
-			_ = sink.Write(ctx, entry)
+			if err := sink.Write(ctx, entry); err != nil {
+				slog.Error("audit sink write failed", "error", err)
+			}
 		}(s)
 	}
 }

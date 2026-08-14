@@ -31,6 +31,8 @@ import (
 	"time"
 )
 
+const maxResponseSize = 10 << 20 // 10MB
+
 // --------------------------------------------------------------------------
 // JSON-RPC types
 // --------------------------------------------------------------------------
@@ -234,7 +236,7 @@ func (c *Client) call(ctx context.Context, url, method string) (json.RawMessage,
 		return nil, fmt.Errorf("unexpected status %d from %s %s", resp.StatusCode, method, url)
 	}
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}

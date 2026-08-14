@@ -29,6 +29,8 @@ import (
 	"strings"
 )
 
+const maxResponseSize = 10 << 20 // 10MB
+
 // --------------------------------------------------------------------------
 // Types
 // --------------------------------------------------------------------------
@@ -142,7 +144,7 @@ func (c *Client) GetAdminToken(ctx context.Context, username, password string) (
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return "", fmt.Errorf("reading token response: %w", err)
 	}
@@ -185,7 +187,7 @@ func (c *Client) CreateClient(ctx context.Context, adminToken string, rep Client
 	defer resp.Body.Close()
 
 	// Drain the body so the connection can be reused.
-	_, _ = io.ReadAll(resp.Body)
+	_, _ = io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 
 	switch resp.StatusCode {
 	case http.StatusCreated:
@@ -226,7 +228,7 @@ func (c *Client) GetClientSecret(ctx context.Context, adminToken, clientUUID str
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return "", fmt.Errorf("reading secret response: %w", err)
 	}
@@ -269,7 +271,7 @@ func (c *Client) DeleteClient(ctx context.Context, adminToken, clientID string) 
 		return fmt.Errorf("sending delete request: %w", err)
 	}
 	defer resp.Body.Close()
-	_, _ = io.ReadAll(resp.Body)
+	_, _ = io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("delete client failed with status %d", resp.StatusCode)
@@ -300,7 +302,7 @@ func (c *Client) findClientUUID(ctx context.Context, adminToken, clientID string
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return "", fmt.Errorf("reading search response: %w", err)
 	}
