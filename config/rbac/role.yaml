@@ -1,0 +1,90 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - httproutes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mcp.mcp-gateway.io
+  resources:
+  - mcpagents
+  - mcppolicies
+  - mcpservers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mcp.mcp-gateway.io
+  resources:
+  - mcpagents/finalizers
+  - mcppolicies/finalizers
+  - mcpservers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - mcp.mcp-gateway.io
+  resources:
+  - mcpagents/status
+  - mcppolicies/status
+  - mcpservers/status
+  verbs:
+  - get
+  - patch
+  - update
