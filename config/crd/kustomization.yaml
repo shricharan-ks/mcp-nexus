@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - bases/mcp.mcp-gateway.io_mcpservers.yaml
+  - bases/mcp.mcp-gateway.io_mcpagents.yaml
+  - bases/mcp.mcp-gateway.io_mcppolicies.yaml
+  - bases/mcp.mcp-gateway.io_mcpmarketplaceentries.yaml

@@ -1,0 +1,15 @@
+MCP Gateway has been deployed!
+
+1. Check the operator is running:
+   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "mcp-gateway.name" . }}
+
+2. Deploy your first MCP server:
+   kubectl apply -f https://raw.githubusercontent.com/mcp-gateway/mcp-gateway/main/examples/echo-server.yaml
+
+3. Check MCP server status:
+   kubectl get mcpservers -A
+
+4. Access the UI (if enabled):
+   kubectl port-forward svc/{{ include "mcp-gateway.fullname" . }} -n {{ .Release.Namespace }} 3000:3000
+
+For more information, visit: https://github.com/mcp-gateway/mcp-gateway

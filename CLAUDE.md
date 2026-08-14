@@ -8,21 +8,24 @@ lifecycle-managed inside any Kubernetes cluster.
 ## Repository layout
 
 ```
-api/                  CRD type definitions (Group: mcp.mcp-gateway.io, Version: v1alpha1)
-cmd/operator/         Operator (controller-manager) entrypoint
-cmd/apiserver/        Aggregated API server entrypoint
-internal/controller/  Reconciler implementations
-internal/transport/   MCP transport helpers (streamable-http, stdio adapter)
-internal/webhook/     Admission webhooks (validating + defaulting)
-internal/discovery/   MCP server discovery logic
-internal/proxy/       Reverse-proxy / routing layer
-config/               Kustomize bases for CRDs, RBAC, manager, webhook, certmanager
-deploy/helm/          Helm chart for production installs
-scripts/              Developer helper scripts (kind-setup, codegen wrappers)
-examples/             Sample MCPServer manifests
-docs/                 Architecture docs, ADRs
-test/e2e/             End-to-end tests (run against Kind)
-ui/                   Web dashboard (React / TypeScript)
+api/                    CRD type definitions (Group: mcp.mcp-gateway.io, Version: v1alpha1)
+cmd/operator/           Operator (controller-manager) entrypoint
+cmd/apiserver/          Aggregated API server entrypoint
+internal/controller/    Reconciler implementations
+internal/discovery/     MCP server capability discovery
+internal/envoy/         Envoy AI Gateway integration
+internal/keycloak/      Keycloak OIDC client management
+internal/cerbos/        Cerbos policy sync
+internal/audit/         Audit logging
+internal/marketplace/   Marketplace catalog and install logic
+internal/observability/ OpenTelemetry metrics and tracing setup
+config/                 Kustomize bases for CRDs, RBAC, manager
+deploy/helm/            Helm chart for production installs
+scripts/                Developer helper scripts (kind-setup, codegen)
+examples/               Sample CRD manifests
+docs/                   Architecture docs, guides
+test/e2e/               End-to-end tests (run against Kind)
+ui/                     Web dashboard (Next.js 15 / TypeScript)
 ```
 
 ## Build commands
@@ -43,7 +46,7 @@ ui/                   Web dashboard (React / TypeScript)
 
 ## Code conventions
 
-- **Go 1.23+** — use standard-library `slices`, `maps`, `slog` where appropriate.
+- **Go 1.26+** — use standard-library `slices`, `maps`, `slog` where appropriate.
 - Follow **controller-runtime** patterns: `Reconcile` returns `(ctrl.Result, error)`,
   use `client.Reader` / `client.Writer` interfaces, never raw REST clients.
 - Wrap errors with `fmt.Errorf("context: %w", err)` — always use `%w`.
