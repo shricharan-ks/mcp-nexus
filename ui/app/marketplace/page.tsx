@@ -1,102 +1,53 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { fetchMarketplace, deployFromCatalog, MarketplaceEntry } from '@/lib/api'
 
-interface MarketplaceEntry {
-  name: string
-  vendor: string
-  version: string
-  category: string
-  description: string
-  tools: number
-  installs: number
-  verified: boolean
+const categories = ['All', 'developer-tools', 'data', 'communication', 'productivity', 'ai-ml', 'security', 'infrastructure', 'custom']
+
+const categoryLabels: Record<string, string> = {
+  'All': 'All',
+  'developer-tools': 'Developer Tools',
+  'data': 'Data',
+  'communication': 'Communication',
+  'productivity': 'Productivity',
+  'ai-ml': 'AI/ML',
+  'security': 'Security',
+  'infrastructure': 'Infrastructure',
+  'custom': 'Custom',
 }
 
-const mockEntries: MarketplaceEntry[] = [
-  {
-    name: 'GitHub',
-    vendor: 'GitHub Inc.',
-    version: 'v1.2.0',
-    category: 'Developer Tools',
-    description:
-      'Access GitHub repositories, issues, pull requests, and actions. Enables AI agents to interact with your codebase and development workflow.',
-    tools: 12,
-    installs: 8420,
-    verified: true,
-  },
-  {
-    name: 'Slack',
-    vendor: 'Salesforce',
-    version: 'v0.9.1',
-    category: 'Communication',
-    description:
-      'Send and receive Slack messages, manage channels, and automate workspace interactions through the MCP protocol.',
-    tools: 8,
-    installs: 5230,
-    verified: true,
-  },
-  {
-    name: 'PostgreSQL',
-    vendor: 'Community',
-    version: 'v2.0.3',
-    category: 'Data',
-    description:
-      'Query and manage PostgreSQL databases. Supports read/write operations, schema introspection, and query optimization suggestions.',
-    tools: 15,
-    installs: 6100,
-    verified: true,
-  },
-  {
-    name: 'Brave Search',
-    vendor: 'Brave Software',
-    version: 'v1.0.0',
-    category: 'AI/ML',
-    description:
-      'Web and local search powered by Brave. Provides real-time search results, summarization, and structured data extraction.',
-    tools: 3,
-    installs: 3800,
-    verified: true,
-  },
-  {
-    name: 'Filesystem',
-    vendor: 'MCP Core',
-    version: 'v1.1.0',
-    category: 'Productivity',
-    description:
-      'Secure filesystem access with configurable sandboxing. Read, write, and manage files within allowed directory boundaries.',
-    tools: 10,
-    installs: 9100,
-    verified: true,
-  },
-  {
-    name: 'HuggingFace',
-    vendor: 'Hugging Face',
-    version: 'v0.5.2',
-    category: 'AI/ML',
-    description:
-      'Browse and query models, datasets, and spaces on the Hugging Face Hub. Run inference and manage ML artifacts from AI agents.',
-    tools: 9,
-    installs: 2750,
-    verified: false,
-  },
-]
-
-const categories = ['All', 'Developer Tools', 'Data', 'Communication', 'Productivity', 'AI/ML']
-
 export default function MarketplacePage() {
+  const [entries, setEntries] = useState<MarketplaceEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [deployTarget, setDeployTarget] = useState<MarketplaceEntry | null>(null)
   const [secrets, setSecrets] = useState({ apiKey: '', apiSecret: '' })
+  const [deploying, setDeploying] = useState(false)
+  const [deployError, setDeployError] = useState<string | null>(null)
 
-  const filtered = mockEntries.filter((entry) => {
+  useEffect(() => {
+    fetchMarketplace()
+      .then(setEntries)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = entries.filter((entry) => {
+    const name = entry.spec.displayName || entry.metadata.name
+    const desc = entry.spec.description || ''
     const matchesSearch =
-      entry.name.toLowerCase().includes(search.toLowerCase()) ||
-      entry.description.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = activeCategory === 'All' || entry.category === activeCategory
+      name.toLowerCase().includes(search.toLowerCase()) ||
+      desc.toLowerCase().includes(search.toLowerCase())
+    const matchesCategory =
+      activeCategory === 'All' || entry.spec.category === activeCategory
     return matchesSearch && matchesCategory
   })
+
+  if (loading) return <div className="p-8 text-gray-500">Loading marketplace...</div>
+  if (error) return <div className="p-8 text-red-500">Error: {error}</div>
 
   return (
     <div className="p-6">
@@ -123,72 +74,93 @@ export default function MarketplacePage() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {cat}
+            {categoryLabels[cat] || cat}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((entry) => (
-          <div
-            key={entry.name}
-            className="flex flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
-          >
-            <div className="mb-2 flex items-start justify-between">
-              <div>
-                <h3 className="flex items-center gap-1.5 text-lg font-semibold text-gray-900">
-                  {entry.name}
-                  {entry.verified && (
-                    <svg
-                      className="h-4 w-4 text-blue-500"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+      {filtered.length === 0 ? (
+        <div className="p-8 text-gray-500">No marketplace entries found.</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((entry) => {
+            const name = entry.spec.displayName || entry.metadata.name
+            const toolCount = entry.spec.installTemplate?.mcpServerSpec
+              ? (entry.spec.source?.image ? 1 : 0)
+              : 0
+            return (
+              <div
+                key={entry.metadata.name}
+                className="flex flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+              >
+                <div className="mb-2 flex items-start justify-between">
+                  <div>
+                    <h3 className="flex items-center gap-1.5 text-lg font-semibold text-gray-900">
+                      {name}
+                      {entry.spec.verified && (
+                        <svg
+                          className="h-4 w-4 text-blue-500"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </h3>
+                    <p className="text-xs text-gray-500">{entry.spec.vendor}</p>
+                  </div>
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    {entry.spec.version}
+                  </span>
+                </div>
+
+                <span className="mb-2 inline-flex w-fit rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  {categoryLabels[entry.spec.category] || entry.spec.category}
+                </span>
+
+                <p className="mb-4 line-clamp-2 flex-1 text-sm text-gray-600">
+                  {entry.spec.description}
+                </p>
+
+                <div className="mb-4 flex items-center gap-4 text-xs text-gray-500">
+                  {entry.status.installCount !== undefined && (
+                    <span>{entry.status.installCount.toLocaleString()} installs</span>
                   )}
-                </h3>
-                <p className="text-xs text-gray-500">{entry.vendor}</p>
+                  {entry.spec.security?.scanStatus && (
+                    <span>Scan: {entry.spec.security.scanStatus}</span>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setDeployTarget(entry)
+                    setSecrets({ apiKey: '', apiSecret: '' })
+                    setDeployError(null)
+                  }}
+                  className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Deploy
+                </button>
               </div>
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-                {entry.version}
-              </span>
-            </div>
-
-            <span className="mb-2 inline-flex w-fit rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-              {entry.category}
-            </span>
-
-            <p className="mb-4 line-clamp-2 flex-1 text-sm text-gray-600">{entry.description}</p>
-
-            <div className="mb-4 flex items-center gap-4 text-xs text-gray-500">
-              <span>{entry.tools} tools</span>
-              <span>{entry.installs.toLocaleString()} installs</span>
-            </div>
-
-            <button
-              onClick={() => {
-                setDeployTarget(entry)
-                setSecrets({ apiKey: '', apiSecret: '' })
-              }}
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Deploy
-            </button>
-          </div>
-        ))}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       {deployTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Deploy {deployTarget.name}
+              Deploy {deployTarget.spec.displayName || deployTarget.metadata.name}
             </h2>
+
+            {deployError && (
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{deployError}</div>
+            )}
 
             <div className="mb-4 space-y-3">
               <div>
@@ -218,17 +190,34 @@ export default function MarketplacePage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeployTarget(null)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                disabled={deploying}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setDeployTarget(null)
+                onClick={async () => {
+                  setDeploying(true)
+                  setDeployError(null)
+                  try {
+                    await deployFromCatalog(
+                      deployTarget.metadata.name,
+                      deployTarget.metadata.namespace || 'default',
+                      secrets
+                    )
+                    setDeployTarget(null)
+                    // Refresh marketplace data
+                    fetchMarketplace().then(setEntries).catch(() => {})
+                  } catch (e: unknown) {
+                    setDeployError(e instanceof Error ? e.message : 'Deploy failed')
+                  } finally {
+                    setDeploying(false)
+                  }
                 }}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                disabled={deploying}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                Deploy
+                {deploying ? 'Deploying...' : 'Deploy'}
               </button>
             </div>
           </div>
