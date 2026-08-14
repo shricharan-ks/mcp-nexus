@@ -77,7 +77,7 @@ func TestBuildDeployment_BasicDefaults(t *testing.T) {
 	r := newTestReconciler()
 	mcps := newTestMCPServer("my-server", "default", "ghcr.io/example/my-mcp:v1")
 
-	dep := r.BuildDeployment(mcps)
+	dep := r.buildDeployment(mcps)
 
 	assert.Equal(t, "my-server", dep.Name)
 	assert.Equal(t, "default", dep.Namespace)
@@ -111,7 +111,7 @@ func TestBuildDeployment_WithSecrets(t *testing.T) {
 		},
 	}
 
-	dep := r.BuildDeployment(mcps)
+	dep := r.buildDeployment(mcps)
 
 	container := dep.Spec.Template.Spec.Containers[0]
 	require.Len(t, container.Env, 2)
@@ -143,7 +143,7 @@ func TestBuildDeployment_WithResources(t *testing.T) {
 		},
 	}
 
-	dep := r.BuildDeployment(mcps)
+	dep := r.buildDeployment(mcps)
 
 	container := dep.Spec.Template.Spec.Containers[0]
 	assert.Equal(t, resource.MustParse("500m"), container.Resources.Limits[corev1.ResourceCPU])
@@ -157,7 +157,7 @@ func TestBuildDeployment_StdioTransport(t *testing.T) {
 	mcps := newTestMCPServer("stdio-server", "default", "ghcr.io/example/mcp-stdio:v1")
 	mcps.Spec.Protocol.Transport = mcpv1alpha1.TransportStdio
 
-	dep := r.BuildDeployment(mcps)
+	dep := r.buildDeployment(mcps)
 
 	require.Len(t, dep.Spec.Template.Spec.Containers, 2, "stdio transport should have 2 containers (mcp-server + stdio-bridge)")
 
@@ -177,7 +177,7 @@ func TestBuildDeployment_WithHealthCheck(t *testing.T) {
 		PeriodSeconds: 15,
 	}
 
-	dep := r.BuildDeployment(mcps)
+	dep := r.buildDeployment(mcps)
 
 	container := dep.Spec.Template.Spec.Containers[0]
 	require.NotNil(t, container.LivenessProbe, "expected liveness probe when healthCheck is set")
@@ -193,7 +193,7 @@ func TestBuildDeployment_NoHealthCheck(t *testing.T) {
 	r := newTestReconciler()
 	mcps := newTestMCPServer("no-health-server", "default", "ghcr.io/example/mcp:v1")
 
-	dep := r.BuildDeployment(mcps)
+	dep := r.buildDeployment(mcps)
 
 	container := dep.Spec.Template.Spec.Containers[0]
 	assert.Nil(t, container.LivenessProbe, "expected no liveness probe when healthCheck is nil")
@@ -208,7 +208,7 @@ func TestBuildDeployment_CustomReplicas(t *testing.T) {
 		MaxReplicas: 10,
 	}
 
-	dep := r.BuildDeployment(mcps)
+	dep := r.buildDeployment(mcps)
 
 	require.NotNil(t, dep.Spec.Replicas)
 	assert.Equal(t, int32(3), *dep.Spec.Replicas, "replicas should match scaling.minReplicas")
@@ -222,7 +222,7 @@ func TestBuildService_Basic(t *testing.T) {
 	r := newTestReconciler()
 	mcps := newTestMCPServer("svc-server", "default", "ghcr.io/example/mcp:v1")
 
-	svc := r.BuildService(mcps)
+	svc := r.buildService(mcps)
 
 	assert.Equal(t, "svc-server", svc.Name)
 	assert.Equal(t, "default", svc.Namespace)
@@ -231,7 +231,7 @@ func TestBuildService_Basic(t *testing.T) {
 	assert.Equal(t, int32(8080), svc.Spec.Ports[0].Port)
 
 	// Selector labels must match the pod template labels.
-	expectedLabels := LabelsForMCPServer(mcps)
+	expectedLabels := commonLabels(mcps)
 	for k, v := range svc.Spec.Selector {
 		assert.Equal(t, expectedLabels[k], v, "selector label %s mismatch", k)
 	}
@@ -245,7 +245,7 @@ func TestBuildService_CustomAnnotations(t *testing.T) {
 		"prometheus.io/scrape":                              "true",
 	}
 
-	svc := r.BuildService(mcps)
+	svc := r.buildService(mcps)
 
 	require.NotNil(t, svc.Annotations)
 	assert.Equal(t, "nlb", svc.Annotations["service.beta.kubernetes.io/aws-load-balancer-type"])
@@ -253,12 +253,12 @@ func TestBuildService_CustomAnnotations(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// LabelsForMCPServer tests
+// commonLabels tests
 // --------------------------------------------------------------------------
 
-func TestLabelsForMCPServer(t *testing.T) {
+func TestCommonLabels(t *testing.T) {
 	mcps := newTestMCPServer("label-test", "default", "ghcr.io/example/mcp:v1")
-	labels := LabelsForMCPServer(mcps)
+	labels := commonLabels(mcps)
 
 	expectedKeys := []string{
 		"app.kubernetes.io/name",
@@ -270,5 +270,5 @@ func TestLabelsForMCPServer(t *testing.T) {
 	}
 
 	assert.Equal(t, "label-test", labels["app.kubernetes.io/instance"])
-	assert.Equal(t, "mcp-gateway-operator", labels["app.kubernetes.io/managed-by"])
+	assert.Equal(t, "mcp-gateway", labels["app.kubernetes.io/managed-by"])
 }
