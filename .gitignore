@@ -41,5 +41,13 @@ hack/tools/bin/
 *.pem
 *.key
 
+# Node / UI
+node_modules/
+ui/.next/
+ui/out/
+
+# Load test results
+test/load/results.json
+
 # Remember plugin
 .remember/
