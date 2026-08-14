@@ -32,6 +32,10 @@ jobs:
           cache: true
       - name: Run tests
         run: make test
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
 
   build:
     name: Build
@@ -47,6 +51,23 @@ jobs:
         run: make build
       - name: Build Docker image
         run: make docker-build
+
+  ui-lint:
+    name: UI Lint & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
 
   helm-lint:
     name: Helm Lint
