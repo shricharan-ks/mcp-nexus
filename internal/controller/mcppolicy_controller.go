@@ -108,11 +108,17 @@ func (r *MCPPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Build Cerbos policy ID based on resource kind and version.
 	cerbosPolicyID := fmt.Sprintf("mcp-gateway/%s/%s", policy.Name, policy.ResourceVersion)
 
-	// Update status: Phase=Synced, SyncedAt=now, CerbosPolicyID.
+	// Update status based on whether Cerbos is actually configured.
 	now := metav1.Now()
-	policy.Status.Phase = mcpv1alpha1.MCPPolicySynced
-	policy.Status.SyncedAt = &now
-	policy.Status.CerbosPolicyID = cerbosPolicyID
+	if r.CerbosURL == "" {
+		policy.Status.Phase = mcpv1alpha1.MCPPolicyPhasePending
+		policy.Status.CerbosPolicyID = cerbosPolicyID
+		logger.Info("Cerbos not configured, policy translated but not pushed", "policy", policy.Name)
+	} else {
+		policy.Status.Phase = mcpv1alpha1.MCPPolicySynced
+		policy.Status.SyncedAt = &now
+		policy.Status.CerbosPolicyID = cerbosPolicyID
+	}
 	if err := r.Status().Update(ctx, &policy); err != nil {
 		return ctrl.Result{}, err
 	}

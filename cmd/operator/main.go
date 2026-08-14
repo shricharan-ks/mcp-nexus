@@ -138,9 +138,11 @@ func main() {
 	}
 
 	if err = (&controller.MCPPolicyReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		CerbosURL: os.Getenv("CERBOS_URL"),
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		CerbosURL:  os.Getenv("CERBOS_URL"),
+		CerbosUser: getEnvOrDefault("CERBOS_USER", "admin"),
+		CerbosPass: getEnvOrDefault("CERBOS_PASS", ""),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MCPPolicy")
 		os.Exit(1)

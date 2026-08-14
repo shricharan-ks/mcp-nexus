@@ -63,9 +63,9 @@ func TestBuildHTTPRoute_Basic(t *testing.T) {
 	require.NotNil(t, route.Spec.ParentRefs[0].Namespace)
 	assert.Equal(t, gatewayv1.Namespace("gateway-ns"), *route.Spec.ParentRefs[0].Namespace)
 
-	// Verify rules.
-	require.Len(t, route.Spec.Rules, 1)
-	rule := route.Spec.Rules[0]
+	// Verify rules (POST + GET).
+	require.Len(t, route.Spec.Rules, 2)
+	rule := route.Spec.Rules[0] // POST rule
 
 	// Path match.
 	require.Len(t, rule.Matches, 1)

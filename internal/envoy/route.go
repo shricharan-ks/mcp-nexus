@@ -35,8 +35,20 @@ func BuildHTTPRoute(server *mcpv1alpha1.MCPServer, gatewayName, gatewayNamespace
 	pathPrefix := "/" + server.Name + "/mcp"
 	pathType := gatewayv1.PathMatchPathPrefix
 	methodPost := gatewayv1.HTTPMethodPost
+	methodGet := gatewayv1.HTTPMethodGet
 	port := gatewayv1.PortNumber(server.Spec.Source.Port)
 	ns := gatewayv1.Namespace(gatewayNamespace)
+
+	backendRefs := []gatewayv1.HTTPBackendRef{
+		{
+			BackendRef: gatewayv1.BackendRef{
+				BackendObjectReference: gatewayv1.BackendObjectReference{
+					Name: gatewayv1.ObjectName(server.Name),
+					Port: &port,
+				},
+			},
+		},
+	}
 
 	return &gatewayv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -67,16 +79,19 @@ func BuildHTTPRoute(server *mcpv1alpha1.MCPServer, gatewayName, gatewayNamespace
 							Method: &methodPost,
 						},
 					},
-					BackendRefs: []gatewayv1.HTTPBackendRef{
+					BackendRefs: backendRefs,
+				},
+				{
+					Matches: []gatewayv1.HTTPRouteMatch{
 						{
-							BackendRef: gatewayv1.BackendRef{
-								BackendObjectReference: gatewayv1.BackendObjectReference{
-									Name: gatewayv1.ObjectName(server.Name),
-									Port: &port,
-								},
+							Path: &gatewayv1.HTTPPathMatch{
+								Type:  &pathType,
+								Value: &pathPrefix,
 							},
+							Method: &methodGet,
 						},
 					},
+					BackendRefs: backendRefs,
 				},
 			},
 		},
