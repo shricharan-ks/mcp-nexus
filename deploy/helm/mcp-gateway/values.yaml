@@ -76,3 +76,16 @@ observability:
     interval: 15s
   alerts:
     enabled: true
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: false  # opt-in, can break connectivity if not configured correctly
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilization: 70
