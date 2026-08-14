@@ -1,0 +1,60 @@
+apiVersion: mcp.mcp-gateway.io/v1alpha1
+kind: MCPMarketplaceEntry
+metadata:
+  name: github-mcp-server
+  labels:
+    mcp-gateway.io/verified: "true"
+spec:
+  displayName: GitHub MCP Server
+  vendor: GitHub
+  version: "1.0.0"
+  description: >-
+    Official GitHub MCP Server providing tools for repository management,
+    issue tracking, pull requests, code search, and more.
+  category: developer-tools
+  tags:
+    - git
+    - vcs
+    - github
+    - repositories
+    - pull-requests
+    - issues
+  homepage: "https://github.com/github/github-mcp-server"
+  documentationUrl: "https://github.com/github/github-mcp-server#readme"
+  source:
+    image: ghcr.io/github/github-mcp-server:latest
+    digest: "sha256:example0123456789abcdef"
+  installTemplate:
+    mcpServerSpec:
+      source:
+        image: ghcr.io/github/github-mcp-server:latest
+        port: 8080
+        healthCheck:
+          path: /health
+          periodSeconds: 15
+      protocol:
+        transport: streamable-http
+        endpoint: /mcp
+      scaling:
+        minReplicas: 1
+        maxReplicas: 5
+    requiredSecrets:
+      - name: GITHUB_TOKEN
+        description: "GitHub Personal Access Token with repo scope"
+    defaultPolicy:
+      allowedTools:
+        - list_repos
+        - get_file_contents
+        - search_code
+        - list_issues
+        - get_pull_request
+        - create_issue
+      deniedTools:
+        - delete_repo
+        - transfer_repo
+  security:
+    scanStatus: passed
+    cveCount: 0
+    criticalCveCount: 0
+  verified: true
+  deprecated: false
