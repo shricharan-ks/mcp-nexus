@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -31,6 +32,7 @@ import (
 	mcpv1alpha1 "github.com/mcp-gateway/mcp-gateway/api/v1alpha1"
 	controller "github.com/mcp-gateway/mcp-gateway/internal/controller"
 	"github.com/mcp-gateway/mcp-gateway/internal/keycloak"
+	"github.com/mcp-gateway/mcp-gateway/internal/observability"
 )
 
 var (
@@ -69,6 +71,19 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	otelShutdown, err := observability.InitOTel(context.Background(), "mcp-gateway-operator",
+		getEnvOrDefault("OTEL_EXPORTER_OTLP_ENDPOINT", ""))
+	if err != nil {
+		setupLog.Error(err, "failed to initialize OTel")
+		os.Exit(1)
+	}
+	defer otelShutdown(context.Background())
+
+	if err := observability.InitMetrics(); err != nil {
+		setupLog.Error(err, "failed to initialize metrics")
+		os.Exit(1)
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
